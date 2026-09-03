@@ -1,0 +1,49 @@
+﻿version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart-prescription-platform-app-1
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /app/vendor
+      - /app/node_modules
+    ports:
+      - "8000:8000"
+      - "5173:5173"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=smart_prescription
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      - db
+    networks:
+      - prescription-network
+
+  db:
+    image: postgres:16-alpine
+    container_name: prescription-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smart_prescription
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - prescription-network
+
+volumes:
+  postgres_data:
+
+networks:
+  prescription-network:
+    driver: bridge
