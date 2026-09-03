@@ -1,6 +1,6 @@
 ﻿FROM php:8.3-fpm-alpine
 
-# Install system dependencies
+# Install system dependencies + zip extension
 RUN apk add --no-cache \
     git \
     curl \
@@ -10,17 +10,19 @@ RUN apk add --no-cache \
     postgresql-dev \
     zip \
     unzip \
+    libzip-dev \
     nodejs \
     npm
 
-# Install PHP extensions
+# Install PHP extensions (zip সহ)
 RUN docker-php-ext-install \
     pdo_pgsql \
     pgsql \
     intl \
     bcmath \
     gd \
-    opcache
+    opcache \
+    zip
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -30,8 +32,8 @@ WORKDIR /app
 # Copy application files
 COPY . .
 
-# Install PHP dependencies
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+# Install PHP dependencies (zip extension ignore)
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-req=ext-zip
 
 # Install Node dependencies
 RUN npm install
