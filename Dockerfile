@@ -50,5 +50,5 @@ RUN chown -R www-data:www-data /app
 
 EXPOSE 8000
 
-# Clear cache, migrate, activate users, start server
-CMD ["sh", "-c", "php artisan config:clear && php artisan migrate --force && php artisan tinker --execute=\"App\\Models\\User::query()->update(['status' => 'active', 'email_verified_at' => now()]);\" && php artisan serve --host=0.0.0.0 --port=8000"]
+# Clear cache, migrate, seed roles, activate users, start server
+CMD ["sh", "-c", "php artisan config:clear && php artisan migrate --force && php artisan db:seed --class=RolePermissionSeeder --force && php artisan tinker --execute=\"App\\Models\\User::query()->update(['status' => 'active', 'email_verified_at' => now()]);\" && php artisan serve --host=0.0.0.0 --port=8000"]
