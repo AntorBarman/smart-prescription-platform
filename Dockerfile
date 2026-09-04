@@ -41,16 +41,14 @@ RUN npm install
 # Build frontend
 RUN npm run build
 
+# Ensure storage and cache directories exist and are writable
+RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
 # Set permissions
 RUN chown -R www-data:www-data /app
 
-# Generate APP_KEY if not set
-RUN php artisan key:generate --force || true
-
-# Create cache tables for database sessions
-RUN php artisan config:cache || true
-
 EXPOSE 8000
 
-# Start command with migration
-CMD ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"]
+# Clear any stale cache, rebuild config from runtime env vars, run migrations, then start server
+CMD ["sh", "-c", "php artisan config:clear && php artisan config:cache && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"]
