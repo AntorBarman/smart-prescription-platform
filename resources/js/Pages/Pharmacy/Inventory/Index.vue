@@ -51,8 +51,13 @@
                 </div>
 
                 <!-- Search -->
-                <div class="bg-white rounded-xl border border-slate-200 p-4 mb-6">
-                    <input v-model="search" type="text" placeholder="Search medicines..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" @input="debouncedSearch" />
+                <div class="bg-white rounded-xl border border-slate-200 p-4 mb-6 shadow-sm">
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <input v-model="search" type="text" placeholder="Search medicines or SKU..." class="flex-1 px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" @input="debouncedSearch" />
+                        <div class="flex gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1">
+                            <button v-for="filter in stockFilters" :key="filter.key" type="button" :class="['whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition', statusFilter === filter.key ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800']" @click="statusFilter = filter.key">{{ filter.label }}</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Inventory Table -->
@@ -69,7 +74,7 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200">
-                            <tr v-for="item in inventory.data" :key="item.id" class="hover:bg-slate-50">
+                            <tr v-for="item in filteredInventory" :key="item.id" class="hover:bg-indigo-50/40 transition">
                                 <td class="px-6 py-4">
                                     <p class="text-sm font-medium text-slate-900">{{ item.medicine?.name }}</p>
                                     <p class="text-xs text-slate-500">{{ item.medicine?.strength }} • {{ item.medicine?.dosage_form }}</p>
@@ -82,15 +87,13 @@
                                 </td>
                                 <td class="px-6 py-4 text-sm text-slate-900">৳{{ item.selling_price }}</td>
                                 <td class="px-6 py-4">
-                                    <span v-if="item.stock_quantity <= item.reorder_level" class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Low Stock</span>
-                                    <span v-else-if="item.stock_quantity === 0" class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Out of Stock</span>
-                                    <span v-else class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">In Stock</span>
+                                    <StatusBadge :status="item.stock_quantity === 0 ? 'danger' : item.stock_quantity <= item.reorder_level ? 'warning' : 'success'" :label="item.stock_quantity === 0 ? 'Out of stock' : item.stock_quantity <= item.reorder_level ? 'Low stock' : 'In stock'" />
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <button @click="openAdjustModal(item)" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Adjust</button>
                                 </td>
                             </tr>
-                            <tr v-if="!inventory.data || inventory.data.length === 0">
+                            <tr v-if="!filteredInventory.length">
                                 <td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">
                                     No inventory items found. Use <strong>Bulk Import</strong> to add all stock at once.
                                 </td>
@@ -194,8 +197,9 @@ Cetirizine 10mg, 200, 5.00</pre>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { computed, ref, reactive } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
+import StatusBadge from '../../../Components/StatusBadge.vue';
 
 const props = defineProps({
     inventory: Object,
@@ -204,6 +208,19 @@ const props = defineProps({
 });
 
 const search = ref('');
+const statusFilter = ref('all');
+const stockFilters = [
+    { key: 'all', label: 'All' },
+    { key: 'in', label: 'In stock' },
+    { key: 'low', label: 'Low stock' },
+    { key: 'out', label: 'Out of stock' },
+];
+const filteredInventory = computed(() => (props.inventory?.data || []).filter((item) => {
+    if (statusFilter.value === 'out') return item.stock_quantity === 0;
+    if (statusFilter.value === 'low') return item.stock_quantity > 0 && item.stock_quantity <= item.reorder_level;
+    if (statusFilter.value === 'in') return item.stock_quantity > item.reorder_level;
+    return true;
+}));
 const showAddModal = ref(false);
 const showBulkImport = ref(false);
 const showAdjustModal = ref(false);
