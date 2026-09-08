@@ -22,14 +22,24 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request)
     {
-        $credentials = $request->only('email', 'password');
-        $user = User::where('email', $credentials['email'])->first();
+        $email = strtolower(trim($request->string('email')->toString()));
+        $credentials = [
+            'email' => $email,
+            'password' => $request->input('password'),
+        ];
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
         $status = $user ? strtolower(trim((string) $user->status)) : null;
 
-        if (!$user || $status !== UserStatus::ACTIVE->value) {
+        if (!$user) {
             throw ValidationException::withMessages([
-                'email' => $user && in_array($status, [UserStatus::INACTIVE->value, UserStatus::SUSPENDED->value], true)
+                'email' => 'No account was found for this email address. Please register on this site first.',
+            ]);
+        }
+
+        if ($status !== UserStatus::ACTIVE->value) {
+            throw ValidationException::withMessages([
+                'email' => in_array($status, [UserStatus::INACTIVE->value, UserStatus::SUSPENDED->value], true)
                     ? 'Your account is inactive or suspended.'
                     : 'Your account could not be activated. Please contact support.',
             ]);
