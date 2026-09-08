@@ -51,14 +51,6 @@ class AuthController extends Controller
             ]);
         }
 
-        // ✅ Email Verification Check
-        if (!$user->hasVerifiedEmail()) {
-            Auth::logout();
-            throw ValidationException::withMessages([
-                'email' => 'Please verify your email address first.',
-            ]);
-        }
-
         $user->update([
             'last_login_at' => now(),
             'last_login_ip' => $request->ip(),
@@ -94,18 +86,13 @@ class AuthController extends Controller
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'status' => UserStatus::ACTIVE->value,
-            // email_verified_at NOT set — verification required
         ]);
 
         $user->assignRole($request->role);
 
-        // ✅ Send verification email
-        $user->sendEmailVerificationNotification();
-
         Auth::login($user);
 
-        // ✅ Redirect to verification notice
-        return redirect()->route('verification.notice');
+        return redirect()->route('dashboard');
     }
 
     public function logout(Request $request)

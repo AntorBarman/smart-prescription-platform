@@ -15,7 +15,6 @@ class AdminUserSeeder extends Seeder
             'name' => 'System Admin',
             'email' => 'admin@prescription.com',
             'password' => Hash::make('Admin@123'),
-            'email_verified_at' => now(),
         ]);
         $admin->assignRole('ADMIN');
 
@@ -24,7 +23,6 @@ class AdminUserSeeder extends Seeder
             'name' => 'Dr. Demo Doctor',
             'email' => 'doctor@prescription.com',
             'password' => Hash::make('Doctor@123'),
-            'email_verified_at' => now(),
         ]);
         $doctor->assignRole('DOCTOR');
 
@@ -33,7 +31,6 @@ class AdminUserSeeder extends Seeder
             'name' => 'Demo Pharmacist',
             'email' => 'pharmacist@prescription.com',
             'password' => Hash::make('Pharmacy@123'),
-            'email_verified_at' => now(),
         ]);
         $pharmacist->assignRole('PHARMACIST');
 
@@ -42,7 +39,6 @@ class AdminUserSeeder extends Seeder
             'name' => 'Demo Pharmacy Manager',
             'email' => 'manager@prescription.com',
             'password' => Hash::make('Manager@123'),
-            'email_verified_at' => now(),
         ]);
         $manager->assignRole('PHARMACY_MANAGER');
 

@@ -7,8 +7,6 @@ use App\Http\Controllers\PharmacyInventoryController;
 use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\QRController;
 use App\Http\Controllers\SalesController;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -43,34 +41,6 @@ Route::get('/register', function () {
 
 Route::post('/register', [AuthController::class, 'register'])->name('register.store');
 
-// EMAIL VERIFICATION ROUTES
-Route::get('/email/verify', function () {
-    return Inertia::render('Auth/VerifyEmail');
-})->middleware('auth')->name('verification.notice');
-
-// Manual verification - ID দিয়ে database update
-Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
-    $user = \App\Models\User::find($id);
-
-    if (!$user) {
-        return redirect()->route('login')->with('error', 'User not found.');
-    }
-
-    // Hash verify করুন
-    if (hash_equals(sha1($user->getEmailForVerification()), $hash)) {
-        $user->email_verified_at = now();
-        $user->save();
-
-        return redirect()->route('login')->with('success', 'Email verified successfully! Please login.');
-    }
-
-    return redirect()->route('login')->with('error', 'Invalid verification link.');
-})->name('verification.verify');
-
-Route::post('/email/verification-notification', function (Request $request) {
-    $request->user()->sendEmailVerificationNotification();
-    return back()->with('success', 'Verification link sent!');
-})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 // AUTHENTICATED ROUTES
 Route::middleware('auth')->group(function () {
 
