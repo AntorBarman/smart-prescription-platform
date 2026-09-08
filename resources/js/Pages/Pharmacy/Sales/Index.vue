@@ -1,90 +1,25 @@
 <template>
-    <div class="min-h-screen bg-[#F8FAFC] flex">
-        <!-- Sidebar -->
-        <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-slate-200 fixed inset-y-0 z-20">
-            <div class="p-5 border-b border-slate-200">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-slate-900 text-sm">MediPrescribe</p>
-                        <p class="text-xs text-slate-500">Pharmacy Panel</p>
-                    </div>
-                </div>
-            </div>
-            <nav class="flex-1 py-4">
-                <Link href="/pharmacy/dashboard" class="flex items-center px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 rounded-lg mx-2">Dashboard</Link>
-                <Link href="/pharmacy/inventory" class="flex items-center px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 rounded-lg mx-2">Inventory</Link>
-                <Link href="/pharmacy/scanner" class="flex items-center px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 rounded-lg mx-2">QR Scanner</Link>
-                <Link href="/pharmacy/sales" class="flex items-center px-4 py-2.5 text-sm bg-indigo-50 text-indigo-700 font-medium rounded-lg mx-2">Sales</Link>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <div class="flex-1 lg:ml-64">
-            <header class="bg-white border-b border-slate-200 sticky top-0 z-10">
-                <div class="flex justify-between items-center px-6 py-4">
-                    <div>
-                        <h1 class="text-xl font-semibold text-slate-900">Sales History</h1>
-                        <p class="text-sm text-slate-500">View all completed sales</p>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <Link href="/pharmacy/sales/create" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">+ New Sale</Link>
-                        <form @submit.prevent="logout">
-                            <button type="submit" class="px-3 py-1.5 text-xs text-slate-500 border border-slate-300 rounded-md">Logout</button>
-                        </form>
-                    </div>
-                </div>
-            </header>
-
-            <main class="px-6 py-6">
-                <!-- Success Message -->
-                <div v-if="$page.props.flash && $page.props.flash.success" class="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
-                    <p class="text-sm text-green-800">{{ $page.props.flash.success }}</p>
-                </div>
-
-                <!-- Sales Table -->
-                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Invoice</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Patient</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Date</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Total</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-slate-200">
-                            <tr v-for="sale in sales.data" :key="sale.id" class="hover:bg-slate-50">
-                                <td class="px-6 py-4 text-sm font-semibold text-indigo-600">{{ sale.invoice_number }}</td>
-                                <td class="px-6 py-4 text-sm text-slate-900">{{ sale.prescription?.patient?.name || '-' }}</td>
-                                <td class="px-6 py-4 text-sm text-slate-500">{{ new Date(sale.created_at).toLocaleDateString() }}</td>
-                                <td class="px-6 py-4 text-right text-sm font-semibold text-slate-900">৳{{ sale.grand_total }}</td>
-                                <td class="px-6 py-4 text-right">
-                                    <Link :href="`/pharmacy/sales/${sale.id}`" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">View</Link>
-                                </td>
-                            </tr>
-                            <tr v-if="!sales.data || sales.data.length === 0">
-                                <td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">No sales yet.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </main>
-        </div>
-    </div>
+    <AppShell title="Sales" subtitle="Review pharmacy transactions">
+        <template #sidebar><PharmacyNav active="sales" /></template>
+        <template #topbar><div class="flex flex-1 items-center justify-between"><div class="hidden items-center gap-2 text-sm text-slate-500 sm:flex">Pharmacy <ChevronRightIcon class="h-4 w-4" /><span class="font-semibold text-slate-900">Sales</span></div><div class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">P</div></div></template>
+        <section class="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p class="mb-2 text-sm font-medium text-indigo-600">Revenue operations</p><h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Sales</h1><p class="mt-1 text-sm text-slate-500">Track invoices and completed pharmacy transactions.</p></div><Link href="/pharmacy/sales/create" class="inline-flex w-fit items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"><PlusIcon class="h-4 w-4" /> New sale</Link></section>
+        <div v-if="$page.props.flash?.success" class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{{ $page.props.flash.success }}</div>
+        <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3"><div v-for="stat in statsCards" :key="stat.label" class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm text-slate-500">{{ stat.label }}</p><p class="mt-2 text-2xl font-bold text-slate-900">{{ stat.value }}</p><p class="mt-1 text-xs text-slate-400">{{ stat.helper }}</p></div></div>
+        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><div class="border-b border-slate-100 px-5 py-4"><h2 class="text-sm font-bold text-slate-900">Transaction history</h2><p class="mt-1 text-xs text-slate-500">{{ sales.total || 0 }} total transactions</p></div><div v-if="sales.data?.length" class="hidden overflow-x-auto md:block"><table class="min-w-full text-left"><thead class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500"><tr><th class="px-5 py-3">Invoice</th><th class="px-5 py-3">Patient</th><th class="px-5 py-3">Items</th><th class="px-5 py-3">Total</th><th class="px-5 py-3">Date</th><th class="px-5 py-3">Status</th><th /></tr></thead><tbody class="divide-y divide-slate-100"><tr v-for="sale in sales.data" :key="sale.id" class="transition hover:bg-indigo-50/40"><td class="px-5 py-4 text-sm font-semibold text-indigo-600">{{ sale.invoice_number }}</td><td class="px-5 py-4 text-sm text-slate-700">{{ sale.prescription?.patient?.name || 'Walk-in sale' }}</td><td class="px-5 py-4 text-sm text-slate-500">{{ sale.items?.length || '—' }}</td><td class="px-5 py-4 text-sm font-bold text-slate-900">৳{{ sale.grand_total }}</td><td class="px-5 py-4 text-sm text-slate-500">{{ formatDate(sale.created_at) }}</td><td class="px-5 py-4"><StatusBadge :status="sale.status === 'completed' ? 'success' : sale.status === 'cancelled' ? 'danger' : 'warning'" :label="sale.status || 'Pending'" /></td><td class="px-5 py-4 text-right"><Link :href="`/pharmacy/sales/${sale.id}`" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700">View</Link></td></tr></tbody></table></div><div v-if="sales.data?.length" class="divide-y divide-slate-100 md:hidden"><div v-for="sale in sales.data" :key="sale.id" class="p-4"><div class="flex items-start justify-between gap-3"><div><p class="text-sm font-semibold text-indigo-600">{{ sale.invoice_number }}</p><p class="mt-1 text-sm text-slate-800">{{ sale.prescription?.patient?.name || 'Walk-in sale' }}</p><p class="mt-1 text-xs text-slate-500">{{ formatDate(sale.created_at) }} · {{ sale.items?.length || '—' }} items</p></div><StatusBadge :status="sale.status === 'completed' ? 'success' : sale.status === 'cancelled' ? 'danger' : 'warning'" :label="sale.status || 'Pending'" /></div><div class="mt-3 flex items-center justify-between"><span class="text-base font-bold text-slate-900">৳{{ sale.grand_total }}</span><Link :href="`/pharmacy/sales/${sale.id}`" class="text-xs font-semibold text-indigo-600">View details</Link></div></div></div><div v-if="!sales.data?.length" class="px-5 py-16 text-center"><CurrencyDollarIcon class="mx-auto h-10 w-10 text-slate-300" /><p class="mt-3 text-sm font-semibold text-slate-700">No sales yet</p><p class="mt-1 text-xs text-slate-500">Completed transactions will appear here.</p></div></section>
+    </AppShell>
 </template>
 
 <script setup>
-import { Link, router } from '@inertiajs/vue3';
-
-defineProps({
-    sales: Object,
-});
-
-const logout = () => {
-    router.post('/logout');
-};
+import { computed } from 'vue';
+import { Link } from '@inertiajs/vue3';
+import { ChevronRightIcon, CurrencyDollarIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import AppShell from '../../../Layouts/AppShell.vue';
+import PharmacyNav from '../../../Components/PharmacyNav.vue';
+import StatusBadge from '../../../Components/StatusBadge.vue';
+const props = defineProps({ sales: { type: Object, default: () => ({ data: [], total: 0 }) } });
+const formatDate = (date) => new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+const todaySales = computed(() => (props.sales.data || []).filter((sale) => new Date(sale.created_at).toDateString() === new Date().toDateString()));
+const todayTotal = computed(() => todaySales.value.reduce((sum, sale) => sum + Number(sale.grand_total || 0), 0));
+const average = computed(() => props.sales.data?.length ? props.sales.data.reduce((sum, sale) => sum + Number(sale.grand_total || 0), 0) / props.sales.data.length : 0);
+const statsCards = computed(() => [{ label: "Today's sales", value: `৳${todayTotal.value.toFixed(2)}`, helper: `${todaySales.value.length} transactions today` }, { label: 'Transactions', value: props.sales.total || 0, helper: 'All recorded sales' }, { label: 'Average sale', value: `৳${average.value.toFixed(2)}`, helper: 'Based on current results' }]);
 </script>
