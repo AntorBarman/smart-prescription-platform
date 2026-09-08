@@ -25,9 +25,13 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
         $user = User::where('email', $credentials['email'])->first();
 
-        if (!$user || $user->status !== UserStatus::ACTIVE->value) {
+        $status = $user ? strtolower(trim((string) $user->status)) : null;
+
+        if (!$user || $status !== UserStatus::ACTIVE->value) {
             throw ValidationException::withMessages([
-                'email' => 'Your account is inactive or suspended.',
+                'email' => $user && in_array($status, [UserStatus::INACTIVE->value, UserStatus::SUSPENDED->value], true)
+                    ? 'Your account is inactive or suspended.'
+                    : 'Your account could not be activated. Please contact support.',
             ]);
         }
 
