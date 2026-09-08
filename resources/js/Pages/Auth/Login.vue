@@ -125,7 +125,7 @@ const form = useForm({
 const submit = () => {
     form.post('/login', {
         headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
         },
         onFinish: () => form.reset('password'),
     });
