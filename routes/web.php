@@ -18,7 +18,13 @@ use Inertia\Inertia;
 
 // HOME PAGE - Public landing page
 Route::get('/', function () {
-    return Inertia::render('Home');
+    return Inertia::render('Home', [
+        'homeStats' => [
+            'activePatients' => \App\Models\Patient::count(),
+            'prescriptionsToday' => \App\Models\Prescription::whereDate('created_at', today())->count(),
+            'medicines' => \App\Models\Medicine::active()->count(),
+        ],
+    ]);
 })->name('home');
 
 // LOGIN AND REGISTER ROUTES

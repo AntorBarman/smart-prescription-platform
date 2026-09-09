@@ -79,8 +79,34 @@ class SalesController extends Controller
 
         DB::transaction(function () use ($request, $pharmacy) {
             $subtotal = 0;
+            $validatedItems = [];
+
             foreach ($request->items as $item) {
-                $subtotal += $item['quantity'] * $item['unit_price'];
+                $inventory = PharmacyInventory::where('pharmacy_id', $pharmacy->id)
+                    ->where('medicine_id', $item['medicine_id'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$inventory) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'items' => "Medicine ID {$item['medicine_id']} is not stocked by this pharmacy.",
+                    ]);
+                }
+
+                if ($inventory->stock_quantity < $item['quantity']) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'items' => "Insufficient stock for {$inventory->medicine->name}. Available: {$inventory->stock_quantity}.",
+                    ]);
+                }
+
+                $unitPrice = (float) $inventory->selling_price;
+                $subtotal += $item['quantity'] * $unitPrice;
+                $validatedItems[] = [
+                    'inventory' => $inventory,
+                    'medicine_id' => $item['medicine_id'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $unitPrice,
+                ];
             }
 
             $tax = $subtotal * 0.05; // 5% tax
@@ -99,7 +125,7 @@ class SalesController extends Controller
                 'status' => 'completed',
             ]);
 
-            foreach ($request->items as $item) {
+            foreach ($validatedItems as $item) {
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'medicine_id' => $item['medicine_id'],
@@ -109,24 +135,25 @@ class SalesController extends Controller
                 ]);
 
                 // Deduct stock
-                $inventory = PharmacyInventory::where('pharmacy_id', $pharmacy->id)
-                    ->where('medicine_id', $item['medicine_id'])
-                    ->first();
+                $inventory = $item['inventory'];
+                $inventory->stock_quantity -= $item['quantity'];
+                $inventory->save();
 
-                if ($inventory) {
-                    $inventory->stock_quantity -= $item['quantity'];
-                    $inventory->save();
+                InventoryTransaction::create([
+                    'pharmacy_id' => $pharmacy->id,
+                    'medicine_id' => $item['medicine_id'],
+                    'type' => 'SALE',
+                    'quantity' => -$item['quantity'],
+                    'reference_type' => Sale::class,
+                    'reference_id' => $sale->id,
+                    'created_by' => auth()->id(),
+                ]);
+            }
 
-                    InventoryTransaction::create([
-                        'pharmacy_id' => $pharmacy->id,
-                        'medicine_id' => $item['medicine_id'],
-                        'type' => 'SALE',
-                        'quantity' => -$item['quantity'],
-                        'reference_type' => Sale::class,
-                        'reference_id' => $sale->id,
-                        'created_by' => auth()->id(),
-                    ]);
-                }
+            if ($request->prescription_id) {
+                \App\Models\Prescription::whereKey($request->prescription_id)
+                    ->where('status', 'issued')
+                    ->update(['status' => 'fulfilled']);
             }
         });
 

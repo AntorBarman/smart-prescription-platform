@@ -80,6 +80,12 @@ class QRController extends Controller
 
             // Get pharmacy inventory pricing
             $pharmacy = auth()->user()->pharmacy;
+            if (!$pharmacy) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your pharmacy profile is not configured.',
+                ], 422);
+            }
 
             $itemsWithPrice = $prescription->items->map(function ($item) use ($pharmacy) {
                 $inventory = \App\Models\PharmacyInventory::where('pharmacy_id', $pharmacy->id)

@@ -82,14 +82,11 @@
                                     <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-300/15 text-cyan-300"><ChartBarIcon class="h-5 w-5" /></span>
                                 </div>
                                 <div class="mt-6 grid grid-cols-2 gap-3">
-                                    <div class="rounded-2xl bg-white/5 p-4"><p class="text-2xl font-bold">128</p><p class="mt-1 text-xs text-slate-400">Active patients</p></div>
-                                    <div class="rounded-2xl bg-cyan-300/10 p-4"><p class="text-2xl font-bold text-cyan-300">24</p><p class="mt-1 text-xs text-slate-400">Prescriptions today</p></div>
+                                    <div class="rounded-2xl bg-white/5 p-4"><p class="text-2xl font-bold">{{ homeStats.activePatients }}</p><p class="mt-1 text-xs text-slate-400">Registered patients</p></div>
+                                    <div class="rounded-2xl bg-cyan-300/10 p-4"><p class="text-2xl font-bold text-cyan-300">{{ homeStats.prescriptionsToday }}</p><p class="mt-1 text-xs text-slate-400">Prescriptions today</p></div>
                                 </div>
                                 <div class="mt-3 rounded-2xl bg-white/5 p-4">
-                                    <div class="flex items-center justify-between text-xs"><span class="text-slate-400">Prescription activity</span><span class="text-emerald-300">+18.4%</span></div>
-                                    <div class="mt-5 flex h-20 items-end gap-2">
-                                        <span v-for="height in [35, 52, 43, 68, 55, 78, 92]" :key="height" class="flex-1 rounded-t-md bg-gradient-to-t from-cyan-500/30 to-cyan-300" :style="{ height: `${height}%` }" />
-                                    </div>
+                                    <div class="flex items-center justify-between text-xs"><span class="text-slate-400">Medicine catalog</span><span class="text-cyan-300">{{ homeStats.medicines }} active</span></div>
                                 </div>
                             </div>
                         </div>
@@ -130,6 +127,8 @@ import { computed } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { ArrowRightIcon, BeakerIcon, ChartBarIcon, CheckCircleIcon, HeartIcon, QrCodeIcon, UsersIcon } from '@heroicons/vue/24/outline';
 
+const props = defineProps({ homeStats: { type: Object, default: () => ({ activePatients: 0, prescriptionsToday: 0, medicines: 0 }) } });
+const homeStats = computed(() => props.homeStats);
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const dashboardHref = computed(() => {
