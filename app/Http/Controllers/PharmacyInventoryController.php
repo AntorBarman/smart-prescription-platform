@@ -131,12 +131,21 @@ class PharmacyInventoryController extends Controller
                 $contents = mb_convert_encoding(substr($contents, 2), 'UTF-8', 'UTF-16BE');
             } elseif (str_starts_with($contents, "\xEF\xBB\xBF")) {
                 $contents = substr($contents, 3);
+            } elseif (mb_detect_encoding($contents, ['UTF-16LE', 'UTF-16BE'], true) !== false) {
+                $contents = mb_convert_encoding($contents, 'UTF-8');
             }
 
             $firstLine = strtok($contents, "\r\n");
-            $delimiter = substr_count((string) $firstLine, ';') > substr_count((string) $firstLine, ',')
-                ? ';'
-                : ',';
+            $delimiterCounts = [
+                ',' => substr_count((string) $firstLine, ','),
+                ';' => substr_count((string) $firstLine, ';'),
+                "\t" => substr_count((string) $firstLine, "\t"),
+            ];
+            arsort($delimiterCounts);
+            $delimiter = array_key_first($delimiterCounts);
+            if ($delimiterCounts[$delimiter] === 0) {
+                $delimiter = ',';
+            }
             $handle = fopen('php://temp', 'r+');
             fwrite($handle, $contents);
             rewind($handle);
