@@ -21,25 +21,13 @@ Route::get('/', function () {
     return Inertia::render('Home');
 })->name('home');
 
-// LOGIN ROUTES
-Route::get('/login', function () {
-    if (auth()->check()) {
-        return redirect()->route('dashboard');
-    }
-    return app(AuthController::class)->showLoginForm();
-})->name('login');
-
-Route::post('/login', [AuthController::class, 'login'])->name('login.store');
-
-// REGISTER ROUTES
-Route::get('/register', function () {
-    if (auth()->check()) {
-        return redirect()->route('dashboard');
-    }
-    return app(AuthController::class)->showRegistrationForm();
-})->name('register');
-
-Route::post('/register', [AuthController::class, 'register'])->name('register.store');
+// LOGIN AND REGISTER ROUTES
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.store');
+    Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->name('register.store');
+});
 
 // AUTHENTICATED ROUTES
 Route::middleware('auth')->group(function () {
