@@ -49,6 +49,12 @@
                 <div v-if="$page.props.flash && $page.props.flash.success" class="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
                     <p class="text-sm text-green-800">{{ $page.props.flash.success }}</p>
                 </div>
+                <div v-if="$page.props.flash && $page.props.flash.error" class="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p class="text-sm text-amber-800">{{ $page.props.flash.error }}</p>
+                </div>
+                <div v-if="$page.props.errors?.file" class="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p class="text-sm text-red-800">{{ $page.props.errors.file }}</p>
+                </div>
 
                 <!-- Search -->
                 <div class="bg-white rounded-xl border border-slate-200 p-4 mb-6 shadow-sm">

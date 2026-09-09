@@ -99,7 +99,7 @@ class PharmacyInventoryController extends Controller
     public function bulkImport(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt|max:10240',
+            'file' => 'required|file|extensions:csv,txt|max:10240',
         ]);
 
         $pharmacy = auth()->user()->pharmacy;
@@ -114,40 +114,46 @@ class PharmacyInventoryController extends Controller
         }
         $file = $request->file('file');
 
-        // CSV পড়ুন
-        $rows = array_map('str_getcsv', file($file->getRealPath()));
-
-        // Header row skip করুন
-        array_shift($rows);
-
         $imported = 0;
         $skipped = 0;
         $errors = [];
 
-        DB::transaction(function () use ($rows, $pharmacy, &$imported, &$skipped, &$errors) {
-            foreach ($rows as $row) {
+        DB::transaction(function () use ($file, $pharmacy, &$imported, &$skipped, &$errors) {
+            $handle = fopen($file->getRealPath(), 'rb');
+            if ($handle === false) {
+                throw new \RuntimeException('The uploaded CSV file could not be opened.');
+            }
+
+            // The first row is the CSV header.
+            fgetcsv($handle);
+            $line = 1;
+
+            while (($row = fgetcsv($handle)) !== false) {
+                $line++;
                 if (count($row) < 3 || trim(implode('', $row)) === '') {
                     continue;
                 }
 
                 // CSV format: Medicine Name/SKU, Stock Quantity, Selling Price
-                $medicineIdentifier = trim($row[0], " \t\n\r\0\x0B\xEF\xBB\xBF");
-                $quantity = (int) trim($row[1]);
-                $price = (float) trim($row[2]);
+                $medicineIdentifier = trim((string) $row[0], " \t\n\r\0\x0B\xEF\xBB\xBF\"");
+                $quantityValue = trim((string) $row[1]);
+                $priceValue = trim((string) $row[2]);
+                $quantity = filter_var($quantityValue, FILTER_VALIDATE_INT);
+                $price = filter_var($priceValue, FILTER_VALIDATE_FLOAT);
 
-                if ($quantity <= 0 || $price < 0) {
-                    $errors[] = "Invalid data: $medicineIdentifier";
+                if ($quantity === false || $quantity <= 0 || $price === false || $price < 0) {
+                    $errors[] = "Line {$line}: invalid quantity or price for {$medicineIdentifier}.";
                     $skipped++;
                     continue;
                 }
 
                 // Medicine খুঁজুন (name বা SKU দিয়ে)
-                $medicine = Medicine::where('name', $medicineIdentifier)
-                    ->orWhere('sku', $medicineIdentifier)
+                $medicine = Medicine::whereRaw('LOWER(TRIM(name)) = ?', [strtolower($medicineIdentifier)])
+                    ->orWhereRaw('LOWER(TRIM(sku)) = ?', [strtolower($medicineIdentifier)])
                     ->first();
 
                 if (!$medicine) {
-                    $errors[] = "Medicine not found: $medicineIdentifier";
+                    $errors[] = "Line {$line}: medicine not found: {$medicineIdentifier}.";
                     $skipped++;
                     continue;
                 }
@@ -180,9 +186,16 @@ class PharmacyInventoryController extends Controller
 
                 $imported++;
             }
+
+            fclose($handle);
         });
 
-        return back()->with('success', "Imported: $imported items. Skipped: $skipped items.");
+        $message = "Imported: {$imported} items. Skipped: {$skipped} items.";
+        if ($errors !== []) {
+            return back()->with('success', $message)->with('error', implode(' ', $errors));
+        }
+
+        return back()->with('success', $message);
     }
 
     public function adjustStock(Request $request, $id)
