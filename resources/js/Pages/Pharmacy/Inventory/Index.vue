@@ -269,6 +269,8 @@ const bulkImport = () => {
     formData.append('file', selectedFile.value);
     
     router.post('/pharmacy/inventory/bulk-import', formData, {
+        forceFormData: true,
+        preserveScroll: true,
         onSuccess: () => {
             showBulkImport.value = false;
             selectedFile.value = null;

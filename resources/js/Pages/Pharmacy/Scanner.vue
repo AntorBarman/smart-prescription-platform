@@ -32,7 +32,7 @@ import { BrowserMultiFormatReader } from '@zxing/browser';
 import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, ExclamationCircleIcon, QrCodeIcon, VideoCameraIcon } from '@heroicons/vue/24/outline';
 import AppShell from '../../Layouts/AppShell.vue';
 import PharmacyNav from '../../Components/PharmacyNav.vue';
-const qrInput = ref(''); const processing = ref(false); const error = ref(''); const result = ref(null); const cameraActive = ref(false); const videoRef = ref(null); const codeReader = new BrowserMultiFormatReader();
+const qrInput = ref(''); const processing = ref(false); const error = ref(''); const result = ref(null); const cameraActive = ref(false); const videoRef = ref(null); const codeReader = new BrowserMultiFormatReader(); let scannerControls = null;
 const toggleCamera = () => cameraActive.value ? stopCamera() : startCamera();
 const startCamera = async () => {
     try {
@@ -48,7 +48,7 @@ const startCamera = async () => {
             throw new Error('Video preview could not be initialized');
         }
 
-        await codeReader.decodeFromConstraints({
+        scannerControls = await codeReader.decodeFromConstraints({
             video: { facingMode: { ideal: 'environment' } },
             audio: false,
         }, videoRef.value, (scan) => {
@@ -62,7 +62,12 @@ const startCamera = async () => {
         error.value = 'Camera access denied or unavailable. Please use manual input.';
     }
 };
-const stopCamera = () => { cameraActive.value = false; if (videoRef.value) videoRef.value.srcObject = null; codeReader.reset(); };
+const stopCamera = () => {
+    scannerControls?.stop();
+    scannerControls = null;
+    cameraActive.value = false;
+    if (videoRef.value) videoRef.value.srcObject = null;
+};
 const processQR = async (content) => { if (!content?.trim()) { error.value = 'Enter a prescription code to verify.'; return; } processing.value = true; error.value = ''; result.value = null; try { const response = await axios.post('/api/qr/process', { qr_content: content.trim() }); if (response.data.success) { result.value = response.data.data; qrInput.value = ''; } else error.value = response.data.message || 'Verification failed.'; } catch (err) { error.value = err.response?.data?.message || 'Verification failed.'; } finally { processing.value = false; } };
 onBeforeUnmount(stopCamera);
 </script>
