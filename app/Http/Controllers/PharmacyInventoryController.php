@@ -119,18 +119,43 @@ class PharmacyInventoryController extends Controller
         $errors = [];
 
         DB::transaction(function () use ($file, $pharmacy, &$imported, &$skipped, &$errors) {
-            $handle = fopen($file->getRealPath(), 'rb');
+            $contents = file_get_contents($file->getRealPath());
+            if ($contents === false || trim($contents) === '') {
+                throw new \RuntimeException('The uploaded CSV file is empty.');
+            }
+
+            // Excel may save CSV files as UTF-16; normalize them before parsing.
+            if (str_starts_with($contents, "\xFF\xFE")) {
+                $contents = mb_convert_encoding(substr($contents, 2), 'UTF-8', 'UTF-16LE');
+            } elseif (str_starts_with($contents, "\xFE\xFF")) {
+                $contents = mb_convert_encoding(substr($contents, 2), 'UTF-8', 'UTF-16BE');
+            } elseif (str_starts_with($contents, "\xEF\xBB\xBF")) {
+                $contents = substr($contents, 3);
+            }
+
+            $firstLine = strtok($contents, "\r\n");
+            $delimiter = substr_count((string) $firstLine, ';') > substr_count((string) $firstLine, ',')
+                ? ';'
+                : ',';
+            $handle = fopen('php://temp', 'r+');
+            fwrite($handle, $contents);
+            rewind($handle);
+
             if ($handle === false) {
                 throw new \RuntimeException('The uploaded CSV file could not be opened.');
             }
 
             // The first row is the CSV header.
-            fgetcsv($handle);
+            fgetcsv($handle, 0, $delimiter);
             $line = 1;
 
-            while (($row = fgetcsv($handle)) !== false) {
+            while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
                 $line++;
                 if (count($row) < 3 || trim(implode('', $row)) === '') {
+                    if (trim(implode('', $row)) !== '') {
+                        $errors[] = "Line {$line}: expected Medicine Name, Stock Quantity and Selling Price.";
+                        $skipped++;
+                    }
                     continue;
                 }
 
@@ -192,7 +217,7 @@ class PharmacyInventoryController extends Controller
 
         $message = "Imported: {$imported} items. Skipped: {$skipped} items.";
         if ($errors !== []) {
-            return back()->with('success', $message)->with('error', implode(' ', $errors));
+            return back()->with('success', $message)->with('error', implode(' ', array_slice($errors, 0, 10)));
         }
 
         return back()->with('success', $message);
