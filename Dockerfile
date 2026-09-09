@@ -50,5 +50,5 @@ RUN chown -R www-data:www-data /app
 
 EXPOSE 8000
 
-# Clear cache, migrate, seed roles, activate users, start server
-CMD ["sh", "-c", "php artisan config:clear && php artisan migrate --force && php artisan db:seed --class=RolePermissionSeeder --force && php artisan tinker --execute=\"App\\Models\\User::query()->update(['status' => 'active']);\" && php artisan serve --host=0.0.0.0 --port=8000"]
+# Clear cache, migrate, seed the complete demo catalog, then start the server.
+CMD ["sh", "-c", "php artisan config:clear && php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=8000"]

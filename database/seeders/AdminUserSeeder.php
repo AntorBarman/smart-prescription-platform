@@ -10,37 +10,29 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create Admin User
-        $admin = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@prescription.com',
-            'password' => Hash::make('Admin@123'),
-        ]);
-        $admin->assignRole('ADMIN');
+        $users = [
+            ['name' => 'System Admin', 'email' => 'admin@prescription.com', 'password' => 'Admin@123', 'role' => 'ADMIN'],
+            ['name' => 'Dr. Demo Doctor', 'email' => 'doctor@prescription.com', 'password' => 'Doctor@123', 'role' => 'DOCTOR'],
+            ['name' => 'Demo Pharmacist', 'email' => 'pharmacist@prescription.com', 'password' => 'Pharmacy@123', 'role' => 'PHARMACIST'],
+            ['name' => 'Demo Pharmacy Manager', 'email' => 'manager@prescription.com', 'password' => 'Manager@123', 'role' => 'PHARMACY_MANAGER'],
+        ];
 
-        // Create Demo Doctor
-        $doctor = User::create([
-            'name' => 'Dr. Demo Doctor',
-            'email' => 'doctor@prescription.com',
-            'password' => Hash::make('Doctor@123'),
-        ]);
-        $doctor->assignRole('DOCTOR');
+        foreach ($users as $data) {
+            $user = User::firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'name' => $data['name'],
+                    'password' => Hash::make($data['password']),
+                    'status' => 'active',
+                ]
+            );
 
-        // Create Demo Pharmacist
-        $pharmacist = User::create([
-            'name' => 'Demo Pharmacist',
-            'email' => 'pharmacist@prescription.com',
-            'password' => Hash::make('Pharmacy@123'),
-        ]);
-        $pharmacist->assignRole('PHARMACIST');
-
-        // Create Demo Pharmacy Manager
-        $manager = User::create([
-            'name' => 'Demo Pharmacy Manager',
-            'email' => 'manager@prescription.com',
-            'password' => Hash::make('Manager@123'),
-        ]);
-        $manager->assignRole('PHARMACY_MANAGER');
+            $user->forceFill([
+                'status' => 'active',
+                'email_verified_at' => $user->email_verified_at ?? now(),
+            ])->save();
+            $user->assignRole($data['role']);
+        }
 
         $this->command->info('Demo users created successfully!');
         $this->command->table(

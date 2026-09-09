@@ -6,6 +6,7 @@ use App\Models\Pharmacy;
 use App\Models\PharmacyInventory;
 use App\Models\Medicine;
 use App\Models\InventoryTransaction;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class PharmacyInventorySeeder extends Seeder
@@ -17,6 +18,7 @@ class PharmacyInventorySeeder extends Seeder
 
         if ($pharmacies->isEmpty()) {
             // Demo pharmacy create করুন
+            $owner = User::where('email', 'pharmacist@prescription.com')->firstOrFail();
             $pharmacy = Pharmacy::create([
                 'name' => 'Demo Pharmacy',
                 'phone' => '01700000002',
@@ -24,7 +26,7 @@ class PharmacyInventorySeeder extends Seeder
                 'address' => 'Dhaka, Bangladesh',
                 'license_number' => 'PH-2026-001',
                 'status' => 'approved',
-                'owner_id' => 3, // pharmacist user id
+                'owner_id' => $owner->id,
             ]);
             $pharmacies = collect([$pharmacy]);
         }
@@ -40,8 +42,7 @@ class PharmacyInventorySeeder extends Seeder
         // প্রতিটি pharmacy-র জন্য inventory data
         foreach ($pharmacies as $pharmacy) {
             foreach ($medicines as $medicine) {
-                // Random stock quantity (50-500)
-                $stock = rand(50, 500);
+                $stock = 100;
                 
                 // Price based on medicine type
                 $basePrice = match($medicine->dosage_form) {
@@ -57,8 +58,7 @@ class PharmacyInventorySeeder extends Seeder
                 // Reorder level (10-30% of stock)
                 $reorderLevel = max(10, (int)($stock * 0.15));
 
-                // Create or update inventory
-                $inventory = PharmacyInventory::updateOrCreate(
+                $inventory = PharmacyInventory::firstOrCreate(
                     [
                         'pharmacy_id' => $pharmacy->id,
                         'medicine_id' => $medicine->id,
@@ -70,14 +70,15 @@ class PharmacyInventorySeeder extends Seeder
                     ]
                 );
 
-                // Initial PURCHASE transaction
-                InventoryTransaction::create([
+                InventoryTransaction::firstOrCreate([
                     'pharmacy_id' => $pharmacy->id,
                     'medicine_id' => $medicine->id,
                     'type' => 'PURCHASE',
-                    'quantity' => $stock,
-                    'created_by' => $pharmacy->owner_id,
+                    'reference_type' => self::class,
                     'notes' => 'Initial stock from seeder',
+                ], [
+                    'quantity' => $inventory->stock_quantity,
+                    'created_by' => $pharmacy->owner_id,
                 ]);
             }
         }

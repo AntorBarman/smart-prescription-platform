@@ -23,10 +23,6 @@ class AuthController extends Controller
     public function login(LoginRequest $request)
     {
         $email = strtolower(trim($request->string('email')->toString()));
-        $credentials = [
-            'email' => $email,
-            'password' => $request->input('password'),
-        ];
         $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
         $status = $user ? strtolower(trim((string) $user->status)) : null;
@@ -45,12 +41,13 @@ class AuthController extends Controller
             ]);
         }
 
-        if (!Auth::attempt($credentials, $request->boolean('remember', false))) {
+        if (!Hash::check((string) $request->input('password'), (string) $user->password)) {
             throw ValidationException::withMessages([
                 'email' => 'Invalid credentials.',
             ]);
         }
 
+        Auth::login($user, $request->boolean('remember', false));
         $user->update([
             'last_login_at' => now(),
             'last_login_ip' => $request->ip(),
@@ -82,7 +79,7 @@ class AuthController extends Controller
     {
         $user = User::create([
             'name' => $request->name,
-            'email' => $request->email,
+            'email' => strtolower(trim($request->email)),
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'status' => UserStatus::ACTIVE->value,
