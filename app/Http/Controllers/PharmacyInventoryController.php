@@ -99,17 +99,26 @@ class PharmacyInventoryController extends Controller
     public function bulkImport(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:10240',
+            'file' => 'required|file|mimes:csv,txt|max:10240',
         ]);
 
         $pharmacy = auth()->user()->pharmacy;
+        if (!$pharmacy) {
+            $pharmacy = Pharmacy::create([
+                'name' => auth()->user()->name . "'s Pharmacy",
+                'phone' => auth()->user()->phone,
+                'email' => auth()->user()->email,
+                'status' => 'approved',
+                'owner_id' => auth()->id(),
+            ]);
+        }
         $file = $request->file('file');
 
         // CSV পড়ুন
         $rows = array_map('str_getcsv', file($file->getRealPath()));
 
         // Header row skip করুন
-        $header = array_shift($rows);
+        array_shift($rows);
 
         $imported = 0;
         $skipped = 0;
@@ -117,10 +126,12 @@ class PharmacyInventoryController extends Controller
 
         DB::transaction(function () use ($rows, $pharmacy, &$imported, &$skipped, &$errors) {
             foreach ($rows as $row) {
-                if (count($row) < 3) continue;
+                if (count($row) < 3 || trim(implode('', $row)) === '') {
+                    continue;
+                }
 
                 // CSV format: Medicine Name/SKU, Stock Quantity, Selling Price
-                $medicineIdentifier = trim($row[0]);
+                $medicineIdentifier = trim($row[0], " \t\n\r\0\x0B\xEF\xBB\xBF");
                 $quantity = (int) trim($row[1]);
                 $price = (float) trim($row[2]);
 
