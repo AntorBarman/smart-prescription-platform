@@ -25,6 +25,9 @@
                             <p v-if="subtitle" class="text-xs text-slate-500">{{ subtitle }}</p>
                         </div>
                     </slot>
+                    <button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600" @click="logout">
+                        Sign out
+                    </button>
                 </div>
             </header>
 
@@ -44,7 +47,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { Bars3Icon, HomeIcon, UsersIcon, ClipboardDocumentListIcon, BeakerIcon } from '@heroicons/vue/24/outline';
 
 defineProps({
@@ -59,6 +62,7 @@ const mobileNav = [
     { label: 'Prescriptions', href: '/prescriptions', icon: ClipboardDocumentListIcon },
     { label: 'Medicines', href: '/medicines', icon: BeakerIcon },
 ];
+const logout = () => router.post('/logout');
 </script>
 
 <style scoped>

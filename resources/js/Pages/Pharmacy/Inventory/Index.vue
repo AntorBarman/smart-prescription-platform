@@ -32,7 +32,7 @@
                     </div>
                     <div class="flex items-center space-x-3">
                         <button @click="showBulkImport = true" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
-                            📥 Bulk Import
+                            Import medicines CSV
                         </button>
                         <button @click="showAddModal = true" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
                             + Add Stock

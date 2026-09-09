@@ -25,17 +25,44 @@
 </template>
 
 <script setup>
-import { ref, onBeforeUnmount } from 'vue';
+import { ref, nextTick, onBeforeUnmount } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import axios from 'axios';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, ExclamationCircleIcon, QrCodeIcon, VideoCameraIcon } from '@heroicons/vue/24/outline';
 import AppShell from '../../Layouts/AppShell.vue';
 import PharmacyNav from '../../Components/PharmacyNav.vue';
-const qrInput = ref(''); const processing = ref(false); const error = ref(''); const result = ref(null); const cameraActive = ref(false); const videoRef = ref(null); const codeReader = new BrowserMultiFormatReader(); let videoStream = null;
+const qrInput = ref(''); const processing = ref(false); const error = ref(''); const result = ref(null); const cameraActive = ref(false); const videoRef = ref(null); const codeReader = new BrowserMultiFormatReader();
 const toggleCamera = () => cameraActive.value ? stopCamera() : startCamera();
-const startCamera = async () => { try { videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); cameraActive.value = true; if (videoRef.value) { videoRef.value.srcObject = videoStream; await videoRef.value.play(); } codeReader.decodeFromVideoDevice(undefined, videoRef.value, (scan) => { if (scan) { processQR(scan.getText()); stopCamera(); } }); } catch (err) { error.value = 'Camera access denied or unavailable. Please use manual input.'; } };
-const stopCamera = () => { cameraActive.value = false; if (videoStream) { videoStream.getTracks().forEach((track) => track.stop()); videoStream = null; } if (videoRef.value) videoRef.value.srcObject = null; codeReader.reset(); };
+const startCamera = async () => {
+    try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+            throw new Error('Camera API unavailable');
+        }
+
+        error.value = '';
+        cameraActive.value = true;
+        await nextTick();
+
+        if (!videoRef.value) {
+            throw new Error('Video preview could not be initialized');
+        }
+
+        await codeReader.decodeFromConstraints({
+            video: { facingMode: { ideal: 'environment' } },
+            audio: false,
+        }, videoRef.value, (scan) => {
+            if (scan && !processing.value) {
+                processQR(scan.getText());
+                stopCamera();
+            }
+        });
+    } catch (err) {
+        stopCamera();
+        error.value = 'Camera access denied or unavailable. Please use manual input.';
+    }
+};
+const stopCamera = () => { cameraActive.value = false; if (videoRef.value) videoRef.value.srcObject = null; codeReader.reset(); };
 const processQR = async (content) => { if (!content?.trim()) { error.value = 'Enter a prescription code to verify.'; return; } processing.value = true; error.value = ''; result.value = null; try { const response = await axios.post('/api/qr/process', { qr_content: content.trim() }); if (response.data.success) { result.value = response.data.data; qrInput.value = ''; } else error.value = response.data.message || 'Verification failed.'; } catch (err) { error.value = err.response?.data?.message || 'Verification failed.'; } finally { processing.value = false; } };
 onBeforeUnmount(stopCamera);
 </script>
