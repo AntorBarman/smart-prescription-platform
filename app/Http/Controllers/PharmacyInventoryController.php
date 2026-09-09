@@ -134,6 +134,7 @@ class PharmacyInventoryController extends Controller
             } elseif (mb_detect_encoding($contents, ['UTF-16LE', 'UTF-16BE'], true) !== false) {
                 $contents = mb_convert_encoding($contents, 'UTF-8');
             }
+            $contents = str_replace("\0", '', $contents);
 
             $firstLine = strtok($contents, "\r\n");
             $delimiterCounts = [
@@ -160,6 +161,19 @@ class PharmacyInventoryController extends Controller
 
             while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
                 $line++;
+                if (count($row) < 3 && count($row) === 1) {
+                    $fallbackRow = trim((string) $row[0], " \t\n\r\0\x0B\"");
+                    $row = str_getcsv($fallbackRow, ',');
+
+                    if (count($row) < 3) {
+                        $row = str_getcsv($fallbackRow, ';');
+                    }
+
+                    if (count($row) < 3) {
+                        $row = str_getcsv($fallbackRow, "\t");
+                    }
+                }
+
                 if (count($row) < 3 || trim(implode('', $row)) === '') {
                     if (trim(implode('', $row)) !== '') {
                         $errors[] = "Line {$line}: expected Medicine Name, Stock Quantity and Selling Price.";
